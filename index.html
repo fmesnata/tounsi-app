@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f0f0f" />
+  <title>Tounsi</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <button id="back-btn" class="back-btn" aria-label="Retour" hidden>‹</button>
+    <h1 id="title">Tounsi</h1>
+  </header>
+
+  <main id="app">
+
+    <!-- Accueil -->
+    <section id="screen-home" class="screen">
+      <ul class="tile-list">
+        <li><button class="tile" data-section="vocabulaire">
+          <span class="tile-label">Vocabulaire</span>
+        </button></li>
+        <li><button class="tile" data-section="verbes" id="tile-verbes">
+          <span class="tile-label">Verbes</span>
+          <span class="tile-count" id="tile-verbes-count">chargement…</span>
+        </button></li>
+      </ul>
+    </section>
+
+    <!-- Catégories vocabulaire -->
+    <section id="screen-categories" class="screen" hidden>
+      <ul id="category-list" class="tile-list"></ul>
+    </section>
+
+    <!-- Carrousel vocabulaire -->
+    <section id="screen-cards" class="screen" hidden>
+      <div id="card-track" class="card-track"></div>
+      <div id="card-progress" class="progress"></div>
+    </section>
+
+    <!-- Verbes : barre de temps + carrousel vertical -->
+    <section id="screen-verbs" class="screen" hidden>
+      <div class="tense-bar">
+        <button class="tense-btn active" data-tense="past">Passé</button>
+        <button class="tense-btn" data-tense="present">Présent</button>
+        <button class="tense-btn" data-tense="imperative">Impératif</button>
+        <button class="tense-btn" data-tense="masdar">Masdar</button>
+        <button id="verb-index-btn" class="tense-btn tense-btn-index" aria-label="Index des verbes">≡</button>
+      </div>
+      <div id="verb-track" class="verb-track"></div>
+      <div id="verb-progress" class="progress"></div>
+    </section>
+
+  </main>
+
+  <!-- Overlay index des verbes -->
+  <div id="verb-index-overlay" class="verb-index-overlay" hidden>
+    <div class="verb-index-header">
+      <input id="verb-search" class="verb-search" type="search" placeholder="Chercher un verbe…" />
+      <button id="verb-index-close" class="back-btn">✕</button>
+    </div>
+    <ul id="verb-index-list" class="verb-index-list"></ul>
+  </div>
+
+  <script src="data/vocabulary.js"></script>
+  <script src="data/verbs.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
