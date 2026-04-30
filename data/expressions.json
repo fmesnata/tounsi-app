@@ -1,0 +1,32 @@
+[
+  {
+    "fr": "Salut",
+    "arfr": "3aslema",
+    "arab": "َعْسالَمةَ",
+    "arfr(rep)": "ysalmek",
+    "arab(rep)": "يَسْلِمك",
+    "arfr(pl)": "-",
+    "arab(pl)": "-",
+    "image": "images/expressions/bonjour.jpg"
+  },
+  {
+    "fr": "Bonjour",
+    "arfr": "sbah el khir",
+    "arab": "صباح الخير",
+    "arfr(rep)": "sbah enour",
+    "arab(rep)": "صباحالنُّورْ",
+    "arfr(pl)": "-",
+    "arab(pl)": "-",
+    "image": "images/expressions/bonjour.jpg"
+  },
+  {
+    "fr": "Aurevoir",
+    "arfr": "beslama",
+    "arab": "بِالس ْالَمة",
+    "arfr(rep)": "fi lamen",
+    "arab(rep)": "في لَمان",
+    "arfr(pl)": "-",
+    "arab(pl)": "-",
+    "image": "images/expressions/bonjour.jpg"
+  }
+]

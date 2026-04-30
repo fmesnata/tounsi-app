@@ -1,3 +1,4 @@
 [
+  { "id": "expressions", "label": "Expressions", "icon": "💬" },
   { "id": "couleurs", "label": "Couleurs", "icon": "🎨" }
 ]
