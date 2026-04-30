@@ -32,6 +32,26 @@ function getArab(card, gender) {
 function isBlank(v) { return !v || v === '-'; }
 
 function buildWordHTML(card) {
+  // Format expressions : arfr/arab sans genre + arfr(rep)/arab(rep) pour la réponse
+  if (card['arfr'] !== undefined) {
+    const arfr = card['arfr'] || '-';
+    const arab = card['arab'] || '-';
+    const rep  = card['arfr(rep)'];
+    const arep = card['arab(rep)'];
+    let html = `<div class="forms-single">
+      <div class="form-arfr-solo">${arfr}</div>
+      ${!isBlank(arab) ? `<div class="form-arab-solo">${arab}</div>` : ''}
+    </div>`;
+    if (!isBlank(rep)) {
+      html += `<div class="forms-single forms-rep">
+        <div class="form-label">rép.</div>
+        <div class="form-arfr-solo">${rep}</div>
+        ${!isBlank(arep) ? `<div class="form-arab-solo">${arep}</div>` : ''}
+      </div>`;
+    }
+    return html;
+  }
+
   const m   = getArfr(card, 'm');
   const f   = getArfr(card, 'f');
   const pl  = getArfr(card, 'pl');
