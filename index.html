@@ -3,68 +3,49 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#0f0f0f" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Tounsi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header class="topbar">
-    <button id="back-btn" class="back-btn" aria-label="Retour" hidden>‹</button>
-    <h1 id="title">Tounsi</h1>
-  </header>
+  <div id="app">
 
-  <main id="app">
-
-    <!-- Accueil -->
+    <!-- Écran d'accueil -->
     <section id="screen-home" class="screen">
-      <ul class="tile-list">
-        <li><button class="tile" data-section="vocabulaire">
-          <span class="tile-label">Vocabulaire</span>
-        </button></li>
-        <li><button class="tile" data-section="verbes" id="tile-verbes">
-          <span class="tile-label">Verbes</span>
-          <span class="tile-count" id="tile-verbes-count">chargement…</span>
-        </button></li>
-      </ul>
-    </section>
-
-    <!-- Catégories vocabulaire -->
-    <section id="screen-categories" class="screen" hidden>
-      <ul id="category-list" class="tile-list"></ul>
-    </section>
-
-    <!-- Carrousel vocabulaire -->
-    <section id="screen-cards" class="screen" hidden>
-      <div id="card-track" class="card-track"></div>
-      <div id="card-progress" class="progress"></div>
-    </section>
-
-    <!-- Verbes : barre de temps + carrousel vertical -->
-    <section id="screen-verbs" class="screen" hidden>
-      <div class="tense-bar">
-        <button class="tense-btn active" data-tense="past">Passé</button>
-        <button class="tense-btn" data-tense="present">Présent</button>
-        <button class="tense-btn" data-tense="imperative">Impératif</button>
-        <button class="tense-btn" data-tense="masdar">Masdar</button>
-        <button id="verb-index-btn" class="tense-btn tense-btn-index" aria-label="Index des verbes">≡</button>
+      <div class="home-header">
+        <h1 class="app-title">تونسي</h1>
+        <p class="app-subtitle">Apprends le Tunisien</p>
       </div>
-      <div id="verb-track" class="verb-track"></div>
-      <div id="verb-progress" class="progress"></div>
+      <div id="category-grid" class="category-grid"></div>
     </section>
 
-  </main>
+    <!-- Écran des cartes -->
+    <section id="screen-cards" class="screen off-right">
+      <header class="cards-header">
+        <button id="back-btn" class="back-btn" aria-label="Retour">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/>
+          </svg>
+        </button>
+        <span id="cards-title" class="cards-title"></span>
+        <span id="cards-counter" class="cards-counter"></span>
+      </header>
 
-  <!-- Overlay index des verbes -->
-  <div id="verb-index-overlay" class="verb-index-overlay" hidden>
-    <div class="verb-index-header">
-      <input id="verb-search" class="verb-search" type="search" placeholder="Chercher un verbe…" />
-      <button id="verb-index-close" class="back-btn">✕</button>
-    </div>
-    <ul id="verb-index-list" class="verb-index-list"></ul>
+      <div id="cards-viewport" class="cards-viewport">
+        <div id="cards-track" class="cards-track"></div>
+      </div>
+
+      <div class="progress-bar-wrap">
+        <div id="progress-fill" class="progress-fill"></div>
+      </div>
+    </section>
+
   </div>
-
-  <script src="data/vocabulary.js"></script>
-  <script src="data/verbs.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

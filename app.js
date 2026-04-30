@@ -1,341 +1,215 @@
-(() => {
-  // ─── Constantes ─────────────────────────────────────────────────
-  const PRONOUNS = [
-    { fr: 'ena',     ar: 'أنا' },
-    { fr: 'enti',    ar: 'إنتَ/إنتِ' },
-    { fr: 'houwa',   ar: 'هو' },
-    { fr: 'hiya',    ar: 'هي' },
-    { fr: 'a7na',    ar: 'إحنا' },
-    { fr: 'entouma', ar: 'إنتوما' },
-    { fr: 'houma',   ar: 'هوما' },
-  ];
-  const TENSES = ['past', 'present', 'imperative', 'masdar'];
-  const TENSE_LABELS = { past: 'Passé', present: 'Présent', imperative: 'Impératif', masdar: 'Masdar' };
-  const PRIORITY_COUNT = 56;
+const ACCENT_COLORS = ['#e9c46a','#f4a261','#2a9d8f','#457b9d','#9b72cf','#e76f51','#06d6a0'];
 
-  // ─── Données ────────────────────────────────────────────────────
-  const vocabData = window.VOCAB_DATA   || { categories: [] };
-  const verbsData = window.VERBS_DATA   || [];
+const homeScreen    = document.getElementById('screen-home');
+const cardsScreen   = document.getElementById('screen-cards');
+const categoryGrid  = document.getElementById('category-grid');
+const cardsTrack    = document.getElementById('cards-track');
+const cardsTitle    = document.getElementById('cards-title');
+const cardsCounter  = document.getElementById('cards-counter');
+const progressFill  = document.getElementById('progress-fill');
+const backBtn       = document.getElementById('back-btn');
+const cardsViewport = document.getElementById('cards-viewport');
 
-  // ─── DOM ────────────────────────────────────────────────────────
-  const screenHome       = document.getElementById('screen-home');
-  const screenCategories = document.getElementById('screen-categories');
-  const screenCards      = document.getElementById('screen-cards');
-  const screenVerbs      = document.getElementById('screen-verbs');
-  const titleEl  = document.getElementById('title');
-  const backBtn  = document.getElementById('back-btn');
-  const verbIndexBtn = document.getElementById('verb-index-btn');
-  const categoryListEl   = document.getElementById('category-list');
-  const cardTrack        = document.getElementById('card-track');
-  const cardProgress     = document.getElementById('card-progress');
-  const verbTrack        = document.getElementById('verb-track');
-  const verbProgressEl   = document.getElementById('verb-progress');
-  const tenseBtns        = document.querySelectorAll('.tense-btn');
-  const overlay          = document.getElementById('verb-index-overlay');
-  const indexList        = document.getElementById('verb-index-list');
-  const searchInput      = document.getElementById('verb-search');
+let currentIndex = 0;
+let totalCards   = 0;
 
-  // ─── Navigation ─────────────────────────────────────────────────
-  const allScreens = [screenHome, screenCategories, screenCards, screenVerbs];
+// ── helpers ───────────────────────────────────────────────────────────────────
 
-  function show(screen, { title = 'Tounsi', back = null } = {}) {
-    allScreens.forEach(s => { s.hidden = true; });
-    screen.hidden = false;
-    titleEl.textContent = title;
-    backBtn.hidden = !back;
-    backBtn.onclick = back || null;
+function getArfr(card, gender) {
+  if (gender === 'm')  return card['arfr(m)'] || card['arf(m)'] || '-';
+  if (gender === 'f')  return card['arfr(f)']  || '-';
+  if (gender === 'pl') return card['arfr(pl)'] || '-';
+  return '-';
+}
+
+function getArab(card, gender) {
+  if (gender === 'm')  return card['arab(m)'] || '-';
+  if (gender === 'f')  return card['arab(f)']  || '-';
+  if (gender === 'pl') return card['arab(pl)'] || '-';
+  return '-';
+}
+
+function isBlank(v) { return !v || v === '-'; }
+
+function buildWordHTML(card) {
+  const m   = getArfr(card, 'm');
+  const f   = getArfr(card, 'f');
+  const pl  = getArfr(card, 'pl');
+  const am  = getArab(card, 'm');
+  const af  = getArab(card, 'f');
+  const apl = getArab(card, 'pl');
+
+  const fDiff  = !isBlank(f)  && f  !== m;
+  const plDiff = !isBlank(pl) && pl !== m;
+
+  if (!fDiff && !plDiff) {
+    return `<div class="forms-single">
+      <div class="form-arfr-solo">${m}</div>
+      ${!isBlank(am) ? `<div class="form-arab-solo">${am}</div>` : ''}
+    </div>`;
   }
 
-  // ─── Accueil ────────────────────────────────────────────────────
-  function renderHome() {
-    show(screenHome, { title: 'Tounsi' });
-  }
+  const cols = [{ label: 'm.', arfr: m, arab: am }];
+  if (fDiff)  cols.push({ label: 'f.',  arfr: f,  arab: af });
+  if (plDiff) cols.push({ label: 'pl.', arfr: pl, arab: apl });
 
-  // Tuile Vocabulaire
-  document.querySelector('[data-section="vocabulaire"]')
-    .addEventListener('click', renderCategories);
+  const blocks = cols.map(c => `
+    <div class="form-block">
+      <span class="form-label">${c.label}</span>
+      <span class="form-arfr">${c.arfr}</span>
+      ${!isBlank(c.arab) ? `<span class="form-arab">${c.arab}</span>` : ''}
+    </div>`).join('');
 
-  // Tuile Verbes
-  const tileVerbes      = document.getElementById('tile-verbes');
-  const tileVerbesCount = document.getElementById('tile-verbes-count');
-  if (verbsData.length) {
-    tileVerbesCount.textContent = `${verbsData.length} verbes`;
-  } else {
-    tileVerbesCount.textContent = 'données manquantes';
-    tileVerbes.disabled = true;
-  }
-  document.querySelector('[data-section="verbes"]')
-    .addEventListener('click', renderVerbs);
+  return `<div class="forms-grid" style="grid-template-columns:repeat(${cols.length},1fr)">${blocks}</div>`;
+}
 
-  // ─── Catégories vocabulaire ──────────────────────────────────────
-  function renderCategories() {
-    categoryListEl.innerHTML = '';
-    vocabData.categories.forEach(cat => {
-      const li  = document.createElement('li');
-      const btn = document.createElement('button');
-      btn.className = 'tile';
-      btn.disabled  = cat.items.length === 0;
+function buildCard(card) {
+  const div = document.createElement('div');
+  div.className = 'card';
 
-      if (cat.icone) {
-        const img = document.createElement('img');
-        img.className = 'tile-icon';
-        img.src = cat.icone;
-        img.alt = '';
-        btn.appendChild(img);
-      } else {
-        const ph = document.createElement('div');
-        ph.className = 'tile-icon-placeholder';
-        btn.appendChild(ph);
-      }
+  const imgWrap = document.createElement('div');
+  imgWrap.className = 'card-img-wrap';
 
-      const label = document.createElement('span');
-      label.className   = 'tile-label';
-      label.textContent = cat.nom;
-      btn.appendChild(label);
+  const img = document.createElement('img');
+  img.src = card.image || '';
+  img.alt = card.fr || '';
+  img.onerror = () => {
+    img.remove();
+    const ph = document.createElement('div');
+    ph.className = 'img-missing';
+    ph.textContent = '🖼';
+    imgWrap.prepend(ph);
+  };
+  imgWrap.appendChild(img);
 
-      const count = document.createElement('span');
-      count.className   = 'tile-count';
-      count.textContent = cat.items.length
-        ? `${cat.items.length} mot${cat.items.length > 1 ? 's' : ''}`
-        : 'Bientôt';
-      btn.appendChild(count);
+  const tapPrev = document.createElement('div');
+  tapPrev.className = 'tap-prev';
+  tapPrev.addEventListener('click', goPrev);
 
-      btn.addEventListener('click', () => { if (cat.items.length) renderCards(cat); });
-      li.appendChild(btn);
-      categoryListEl.appendChild(li);
-    });
-    show(screenCategories, { title: 'Vocabulaire', back: renderHome });
-  }
+  const tapNext = document.createElement('div');
+  tapNext.className = 'tap-next';
+  tapNext.addEventListener('click', goNext);
 
-  // ─── Carrousel vocabulaire ───────────────────────────────────────
-  function renderCards(category) {
-    cardTrack.innerHTML   = '';
-    cardProgress.innerHTML = '';
-    category.items.forEach(item => cardTrack.appendChild(buildVocabCard(item)));
+  imgWrap.appendChild(tapPrev);
+  imgWrap.appendChild(tapNext);
 
-    const dots    = document.createElement('div'); dots.className    = 'dots';
-    const counter = document.createElement('span'); counter.className = 'counter';
-    category.items.forEach(() => {
-      const d = document.createElement('span'); d.className = 'dot'; dots.appendChild(d);
-    });
-    cardProgress.appendChild(dots);
-    cardProgress.appendChild(counter);
+  const words = document.createElement('div');
+  words.className = 'card-words';
+  words.innerHTML = `<div class="word-fr">${card.fr || ''}</div>${buildWordHTML(card)}`;
 
-    const update = () => {
-      const idx = Math.round(cardTrack.scrollLeft / cardTrack.clientWidth);
-      [...dots.children].forEach((d, i) => d.classList.toggle('active', i === idx));
-      counter.textContent = `${idx + 1} / ${category.items.length}`;
-    };
-    cardTrack.onscroll = () => requestAnimationFrame(update);
-    show(screenCards, { title: category.nom, back: renderCategories });
-    requestAnimationFrame(() => { cardTrack.scrollLeft = 0; update(); });
-  }
+  div.appendChild(imgWrap);
+  div.appendChild(words);
+  return div;
+}
 
-  function buildVocabCard(item) {
-    const card    = document.createElement('article'); card.className = 'card';
-    const imgWrap = document.createElement('div');     imgWrap.className = 'card-image';
-    if (item.image) {
-      const img = document.createElement('img');
-      img.src = item.image; img.alt = item.fr || ''; img.loading = 'lazy';
-      imgWrap.appendChild(img);
-    } else {
-      imgWrap.classList.add('empty'); imgWrap.textContent = '—';
-    }
-    card.appendChild(imgWrap);
+// ── navigation ────────────────────────────────────────────────────────────────
 
-    const body = document.createElement('div'); body.className = 'card-body';
-    if (item.fr) {
-      const fr = document.createElement('div'); fr.className = 'card-fr'; fr.textContent = item.fr;
-      body.appendChild(fr);
-    }
-    const grid = document.createElement('div'); grid.className = 'forms-grid';
-    addFormRow(grid, 'Masculin', item.masculin);
-    addFormRow(grid, 'Féminin',  item.feminin);
-    addFormRow(grid, 'Pluriel',  item.pluriel);
-    body.appendChild(grid);
-    card.appendChild(body);
-    return card;
-  }
+function goTo(index) {
+  currentIndex = Math.max(0, Math.min(index, totalCards - 1));
+  cardsTrack.style.transform = `translateX(-${currentIndex * 100}%)`;
+  cardsCounter.textContent   = `${currentIndex + 1} / ${totalCards}`;
+  progressFill.style.width   = `${((currentIndex + 1) / totalCards) * 100}%`;
+}
 
-  function addFormRow(parent, label, form) {
-    const hasArabic = form && form.arabe && form.arabe !== '-';
-    const hasLatin  = form && form.latin  && form.latin  !== '-';
-    const isEmpty   = !hasArabic && !hasLatin;
+function goNext() { if (currentIndex < totalCards - 1) goTo(currentIndex + 1); }
+function goPrev() { if (currentIndex > 0)              goTo(currentIndex - 1); }
 
-    const row   = document.createElement('div'); row.className = isEmpty ? 'form-row empty' : 'form-row';
-    const lbl   = document.createElement('span'); lbl.className = 'form-label'; lbl.textContent = label;
-    const words = document.createElement('div');  words.className = 'form-words';
-    const la    = document.createElement('span'); la.className = 'form-latin';  la.textContent  = hasLatin  ? form.latin  : '\u00A0';
-    const ar    = document.createElement('span'); ar.className = 'form-arabic'; ar.lang = 'ar'; ar.textContent = hasArabic ? form.arabe : '\u00A0';
+// ── swipe ─────────────────────────────────────────────────────────────────────
 
-    words.appendChild(la); words.appendChild(ar);
-    row.appendChild(lbl); row.appendChild(words);
-    parent.appendChild(row);
-  }
+let touchStartX = 0;
+let touchStartY = 0;
+let swipeActive = false;
 
-  // ─── Verbes ──────────────────────────────────────────────────────
-  let activeTense = 'past';
-  let swipeStartX = null;
-  let swipeStartY = null;
+cardsViewport.addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+  swipeActive = false;
+}, { passive: true });
 
-  function renderVerbs() {
-    verbTrack.innerHTML = '';
-    verbsData.forEach((verb, i) => verbTrack.appendChild(buildVerbItem(verb, i)));
-    verbTrack.scrollTop = 0;
-    updateVerbProgress();
+cardsViewport.addEventListener('touchmove', e => {
+  const dx = Math.abs(e.touches[0].clientX - touchStartX);
+  const dy = Math.abs(e.touches[0].clientY - touchStartY);
+  if (!swipeActive && dx > dy && dx > 8) swipeActive = true;
+}, { passive: true });
 
-    verbTrack.onscroll = () => requestAnimationFrame(updateVerbProgress);
-    verbTrack.addEventListener('touchstart', onTouchStart, { passive: true });
-    verbTrack.addEventListener('touchend',   onTouchEnd,   { passive: true });
+cardsViewport.addEventListener('touchend', e => {
+  if (!swipeActive) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (dx < -48) goNext();
+  else if (dx > 48) goPrev();
+  swipeActive = false;
+});
 
-    show(screenVerbs, { title: 'Verbes', back: renderHome });
-  }
+// ── keyboard ──────────────────────────────────────────────────────────────────
 
-  function buildVerbItem(verb) {
-    const item = document.createElement('div'); item.className = 'verb-item';
+document.addEventListener('keydown', e => {
+  if (cardsScreen.classList.contains('off-right')) return;
+  if (e.key === 'ArrowRight') goNext();
+  if (e.key === 'ArrowLeft')  goPrev();
+  if (e.key === 'Escape')     showHome();
+});
 
-    const header = document.createElement('div'); header.className = 'verb-header';
-    const fr = document.createElement('span'); fr.className = 'verb-fr'; fr.textContent = verb.fr;
-    const en = document.createElement('span'); en.className = 'verb-en'; en.textContent = verb.en;
-    header.appendChild(fr); header.appendChild(en);
-    item.appendChild(header);
+// ── transitions ───────────────────────────────────────────────────────────────
 
-    TENSES.forEach(tense => {
-      const panel = document.createElement('div');
-      panel.className    = 'verb-tense-panel' + (tense === activeTense ? ' active' : '');
-      panel.dataset.tense = tense;
-      panel.appendChild(tense === 'masdar' ? buildMasdarPanel(verb) : buildConjTable(verb, tense));
-      item.appendChild(panel);
+function showCards(label) {
+  cardsTitle.textContent = label;
+  homeScreen.classList.add('transitioning', 'off-left');
+  cardsScreen.classList.add('transitioning');
+  cardsScreen.classList.remove('off-right');
+  homeScreen.addEventListener('transitionend',  () => homeScreen.classList.remove('transitioning'),  { once: true });
+  cardsScreen.addEventListener('transitionend', () => cardsScreen.classList.remove('transitioning'), { once: true });
+}
+
+function showHome() {
+  homeScreen.classList.add('transitioning');
+  homeScreen.classList.remove('off-left');
+  cardsScreen.classList.add('transitioning', 'off-right');
+  homeScreen.addEventListener('transitionend',  () => homeScreen.classList.remove('transitioning'),  { once: true });
+  cardsScreen.addEventListener('transitionend', () => cardsScreen.classList.remove('transitioning'), { once: true });
+}
+
+backBtn.addEventListener('click', showHome);
+
+// ── load category ─────────────────────────────────────────────────────────────
+
+function loadCategory(cat) {
+  cardsTrack.innerHTML = '';
+  totalCards   = cat.cards.length;
+  currentIndex = 0;
+  cat.cards.forEach(card => cardsTrack.appendChild(buildCard(card)));
+  goTo(0);
+  showCards(cat.label);
+}
+
+// ── init ──────────────────────────────────────────────────────────────────────
+
+async function init() {
+  try {
+    const manifest = await fetch('data/manifest.json').then(r => r.json());
+
+    const categories = await Promise.all(
+      manifest.map(async (entry, i) => {
+        const cards = await fetch(`data/${entry.id}.json`).then(r => r.json());
+        return { ...entry, cards, color: ACCENT_COLORS[i % ACCENT_COLORS.length] };
+      })
+    );
+
+    categories.forEach(cat => {
+      const tile = document.createElement('button');
+      tile.className = 'cat-tile';
+      tile.style.setProperty('--tile-color', cat.color);
+      tile.innerHTML = `
+        <span class="cat-tile-icon">${cat.icon || '📚'}</span>
+        <span class="cat-tile-label">${cat.label}</span>
+        <span class="cat-tile-count">${cat.cards.length} mots</span>`;
+      tile.addEventListener('click', () => loadCategory(cat));
+      categoryGrid.appendChild(tile);
     });
 
-    return item;
+  } catch (err) {
+    console.error(err);
+    categoryGrid.innerHTML = '<p style="color:var(--text-2);padding:24px;text-align:center;grid-column:1/-1">Impossible de charger les données.<br>Vérifie que l\'application est servie via HTTP.</p>';
   }
+}
 
-  function buildConjTable(verb, tense) {
-    const table = document.createElement('div'); table.className = 'conj-table';
-    const forms = (verb.tenses && verb.tenses[tense]) || [];
-
-    PRONOUNS.forEach((pron, i) => {
-      const form      = forms[i] || {};
-      const hasLatin  = form.latin  && form.latin  !== '-';
-      const hasArabic = form.arabic && form.arabic !== '-';
-
-      const row = document.createElement('div');
-      row.className = 'conj-row' + (!hasLatin && !hasArabic ? ' empty' : '');
-
-      const p = document.createElement('span'); p.className = 'conj-pronoun'; p.textContent = pron.fr;
-      const l = document.createElement('span'); l.className = 'conj-latin';  l.textContent = hasLatin  ? form.latin  : '—';
-      const a = document.createElement('span'); a.className = 'conj-arabic'; a.lang = 'ar'; a.textContent = hasArabic ? form.arabic : '';
-
-      row.appendChild(p); row.appendChild(l); row.appendChild(a);
-      table.appendChild(row);
-    });
-    return table;
-  }
-
-  function buildMasdarPanel(verb) {
-    const panel = document.createElement('div'); panel.className = 'masdar-panel';
-    const form  = verb.tenses && verb.tenses.masdar && verb.tenses.masdar[0];
-
-    if (form && form.arabic) {
-      const ar = document.createElement('div'); ar.className = 'masdar-arabic'; ar.lang = 'ar'; ar.textContent = form.arabic;
-      panel.appendChild(ar);
-    }
-    if (form && form.latin) {
-      const la = document.createElement('div'); la.className = 'masdar-latin'; la.textContent = form.latin;
-      panel.appendChild(la);
-    }
-    if (!form || (!form.arabic && !form.latin)) {
-      const dash = document.createElement('div'); dash.className = 'masdar-latin'; dash.style.opacity = '0.3'; dash.textContent = '—';
-      panel.appendChild(dash);
-    }
-    return panel;
-  }
-
-  function updateVerbProgress() {
-    if (!verbsData.length) return;
-    const idx = Math.round(verbTrack.scrollTop / (verbTrack.clientHeight || 1));
-    verbProgressEl.textContent = `${Math.min(idx + 1, verbsData.length)} / ${verbsData.length}`;
-  }
-
-  // Tense bar — clic
-  tenseBtns.forEach(btn => btn.addEventListener('click', () => setActiveTense(btn.dataset.tense)));
-
-  function setActiveTense(tense) {
-    if (tense === activeTense) return;
-    activeTense = tense;
-    tenseBtns.forEach(b => b.classList.toggle('active', b.dataset.tense === tense));
-    document.querySelectorAll('.verb-tense-panel').forEach(p => {
-      p.classList.toggle('active', p.dataset.tense === tense);
-    });
-  }
-
-  // Swipe horizontal → changer de temps
-  function onTouchStart(e) {
-    swipeStartX = e.touches[0].clientX;
-    swipeStartY = e.touches[0].clientY;
-  }
-  function onTouchEnd(e) {
-    if (swipeStartX === null) return;
-    const dx = e.changedTouches[0].clientX - swipeStartX;
-    const dy = e.changedTouches[0].clientY - swipeStartY;
-    swipeStartX = swipeStartY = null;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 35) {
-      const cur  = TENSES.indexOf(activeTense);
-      const next = dx < 0 ? Math.min(cur + 1, 3) : Math.max(cur - 1, 0);
-      setActiveTense(TENSES[next]);
-    }
-  }
-
-  // ─── Index / recherche ──────────────────────────────────────────
-  verbIndexBtn.addEventListener('click', () => {
-    overlay.hidden = false;
-    searchInput.value = '';
-    buildIndexList('');
-    searchInput.focus();
-  });
-  document.getElementById('verb-index-close').addEventListener('click', () => {
-    overlay.hidden = true;
-  });
-  searchInput.addEventListener('input', () => {
-    buildIndexList(searchInput.value.trim().toLowerCase());
-  });
-
-  function buildIndexList(filter) {
-    indexList.innerHTML = '';
-    verbsData.forEach((verb, i) => {
-      if (filter && !verb.fr.toLowerCase().includes(filter) && !verb.en.toLowerCase().includes(filter)) return;
-
-      const li   = document.createElement('li');  li.className = 'verb-index-item';
-      const left = document.createElement('div'); left.style.cssText = 'display:flex;align-items:center;gap:8px;';
-
-      const frEl = document.createElement('span'); frEl.className = 'verb-index-fr'; frEl.textContent = verb.fr;
-      left.appendChild(frEl);
-
-      if (i < PRIORITY_COUNT) {
-        const badge = document.createElement('span'); badge.className = 'verb-index-priority'; badge.textContent = '★';
-        left.appendChild(badge);
-      }
-
-      const masdarForm = verb.tenses && verb.tenses.masdar && verb.tenses.masdar[0];
-      const right = document.createElement('span'); right.className = 'verb-index-masdar';
-      right.textContent = (masdarForm && masdarForm.arabic) ? masdarForm.arabic : '';
-
-      li.appendChild(left); li.appendChild(right);
-      li.addEventListener('click', () => {
-        overlay.hidden = true;
-        jumpToVerb(i);
-      });
-      indexList.appendChild(li);
-    });
-  }
-
-  function jumpToVerb(idx) {
-    const h = verbTrack.clientHeight;
-    verbTrack.scrollTo({ top: idx * h, behavior: 'smooth' });
-    setTimeout(updateVerbProgress, 400);
-  }
-
-  // ─── Démarrage ──────────────────────────────────────────────────
-  renderHome();
-})();
+init();
