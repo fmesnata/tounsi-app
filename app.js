@@ -53,14 +53,12 @@ function buildWordHTML(card) {
   if (fDiff)  cols.push({ label: 'f.',  arfr: f,  arab: af });
   if (plDiff) cols.push({ label: 'pl.', arfr: pl, arab: apl });
 
-  const blocks = cols.map(c => `
-    <div class="form-block">
-      <span class="form-label">${c.label}</span>
-      <span class="form-arfr">${c.arfr}</span>
-      ${!isBlank(c.arab) ? `<span class="form-arab">${c.arab}</span>` : ''}
-    </div>`).join('');
+  const n = cols.length;
+  const labels = cols.map(c => `<span class="form-label">${c.label}</span>`).join('');
+  const arfrs  = cols.map(c => `<span class="form-arfr">${c.arfr}</span>`).join('');
+  const arabs  = cols.map(c => `<span class="form-arab">${!isBlank(c.arab) ? c.arab : ''}</span>`).join('');
 
-  return `<div class="forms-grid" style="grid-template-columns:repeat(${cols.length},1fr)">${blocks}</div>`;
+  return `<div class="forms-grid" style="grid-template-columns:repeat(${n},1fr)">${labels}${arfrs}${arabs}</div>`;
 }
 
 function buildCard(card) {

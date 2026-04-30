@@ -269,17 +269,12 @@ html, body {
   line-height: 1.5;
 }
 
-/* layout: grid forms */
+/* layout: grid forms (3 lignes : labels / arfr / arab) */
 .forms-grid {
   display: grid;
-  gap: 10px 8px;
-}
-
-.form-block {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+  row-gap: 4px;
+  column-gap: 8px;
+  align-items: baseline;
 }
 
 .form-label {
@@ -288,10 +283,11 @@ html, body {
   letter-spacing: 1px;
   color: var(--text-muted);
   line-height: 1;
+  padding-bottom: 2px;
 }
 
 .form-arfr {
-  font-size: clamp(1.1rem, 4.5vw, 1.4rem);
+  font-size: clamp(1.1rem, 4.5vw, 1.45rem);
   font-weight: 700;
   color: var(--text);
   line-height: 1.15;
