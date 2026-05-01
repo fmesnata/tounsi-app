@@ -1,5 +1,40 @@
 const ACCENT_COLORS = ['#e9c46a','#f4a261','#2a9d8f','#457b9d','#9b72cf','#e76f51','#06d6a0'];
 
+// ── CSV parser ────────────────────────────────────────────────────────────────
+
+function parseCSVLine(line) {
+  const result = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      inQuotes = !inQuotes;
+    } else if (ch === ',' && !inQuotes) {
+      result.push(cur);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n').map(l => l.trimEnd());
+  if (lines.length < 2) return [];
+  const headers = parseCSVLine(lines[0]).map(h => h.trim());
+  return lines.slice(1)
+    .filter(l => l.trim())
+    .map(line => {
+      const values = parseCSVLine(line);
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = (values[i] || '').trim(); });
+      return obj;
+    });
+}
+
 const homeScreen    = document.getElementById('screen-home');
 const cardsScreen   = document.getElementById('screen-cards');
 const categoryGrid  = document.getElementById('category-grid');
@@ -207,7 +242,11 @@ async function init() {
 
     const categories = await Promise.all(
       manifest.map(async (entry, i) => {
-        const cards = await fetch(`data/${entry.id}.json`).then(r => r.json());
+        const text  = await fetch(`data/${entry.id}.csv`).then(r => r.text());
+        const cards = parseCSV(text).map(card => ({
+          ...card,
+          image: `images/${entry.id}/${card.fr}.png`
+        }));
         return { ...entry, cards, color: ACCENT_COLORS[i % ACCENT_COLORS.length] };
       })
     );
