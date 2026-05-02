@@ -1,4 +1,6 @@
 [
   { "id": "expressions", "label": "Expressions", "icon": "💬" },
-  { "id": "couleurs", "label": "Couleurs", "icon": "🎨" }
+  { "id": "couleurs", "label": "Couleurs", "icon": "🎨" },
+  { "id": "fruits", "label": "Fruits", "icon": "🍎" },
+  { "id": "legumes", "label": "Légumes", "icon": "🥕" }
 ]
