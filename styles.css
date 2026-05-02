@@ -303,6 +303,14 @@ html, body {
   line-height: 1.4;
 }
 
+/* layout: toutes colonnes (générique) */
+.forms-all {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  align-items: baseline;
+}
+
 /* ===== PROGRESS BAR ===== */
 .progress-bar-wrap {
   height: 3px;

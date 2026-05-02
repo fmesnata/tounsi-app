@@ -48,72 +48,31 @@ const cardsViewport = document.getElementById('cards-viewport');
 let currentIndex = 0;
 let totalCards   = 0;
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// ── card builder ──────────────────────────────────────────────────────────────
 
-function getArfr(card, gender) {
-  if (gender === 'm')  return card['arfr(m)'] || card['arf(m)'] || '-';
-  if (gender === 'f')  return card['arfr(f)']  || '-';
-  if (gender === 'pl') return card['arfr(pl)'] || '-';
-  return '-';
-}
+const ARABIC_RE = /[؀-ۿ]/;
 
-function getArab(card, gender) {
-  if (gender === 'm')  return card['arab(m)'] || '-';
-  if (gender === 'f')  return card['arab(f)']  || '-';
-  if (gender === 'pl') return card['arab(pl)'] || '-';
-  return '-';
-}
-
-function isBlank(v) { return !v || v === '-'; }
-
+// Affiche toutes les colonnes sauf "fr" et "image", détecte l'arabe automatiquement
 function buildWordHTML(card) {
-  // Format expressions : arfr/arab sans genre + arfr(rep)/arab(rep) pour la réponse
-  if (card['arfr'] !== undefined) {
-    const arfr = card['arfr'] || '-';
-    const arab = card['arab'] || '-';
-    const rep  = card['arfr(rep)'];
-    const arep = card['arab(rep)'];
-    let html = `<div class="forms-single">
-      <div class="form-arfr-solo">${arfr}</div>
-      ${!isBlank(arab) ? `<div class="form-arab-solo">${arab}</div>` : ''}
-    </div>`;
-    if (!isBlank(rep)) {
-      html += `<div class="forms-single forms-rep">
-        <div class="form-label">rép.</div>
-        <div class="form-arfr-solo">${rep}</div>
-        ${!isBlank(arep) ? `<div class="form-arab-solo">${arep}</div>` : ''}
-      </div>`;
-    }
-    return html;
+  const SKIP = new Set(['fr', 'image']);
+  const vals = Object.entries(card)
+    .filter(([k, v]) => !SKIP.has(k) && v && v !== '-')
+    .map(([, v]) => v);
+
+  if (!vals.length) return '';
+
+  if (vals.length === 1) {
+    const v = vals[0];
+    const cls = ARABIC_RE.test(v) ? 'form-arab-solo' : 'form-arfr-solo';
+    return `<div class="forms-single"><div class="${cls}">${v}</div></div>`;
   }
 
-  const m   = getArfr(card, 'm');
-  const f   = getArfr(card, 'f');
-  const pl  = getArfr(card, 'pl');
-  const am  = getArab(card, 'm');
-  const af  = getArab(card, 'f');
-  const apl = getArab(card, 'pl');
+  const cells = vals.map(v => {
+    const cls = ARABIC_RE.test(v) ? 'form-arab' : 'form-arfr';
+    return `<span class="${cls}">${v}</span>`;
+  }).join('');
 
-  const fDiff  = !isBlank(f)  && f  !== m;
-  const plDiff = !isBlank(pl) && pl !== m;
-
-  if (!fDiff && !plDiff) {
-    return `<div class="forms-single">
-      <div class="form-arfr-solo">${m}</div>
-      ${!isBlank(am) ? `<div class="form-arab-solo">${am}</div>` : ''}
-    </div>`;
-  }
-
-  const cols = [{ label: 'm.', arfr: m, arab: am }];
-  if (fDiff)  cols.push({ label: 'f.',  arfr: f,  arab: af });
-  if (plDiff) cols.push({ label: 'pl.', arfr: pl, arab: apl });
-
-  const n = cols.length;
-  const labels = cols.map(c => `<span class="form-label">${c.label}</span>`).join('');
-  const arfrs  = cols.map(c => `<span class="form-arfr">${c.arfr}</span>`).join('');
-  const arabs  = cols.map(c => `<span class="form-arab">${!isBlank(c.arab) ? c.arab : ''}</span>`).join('');
-
-  return `<div class="forms-grid" style="grid-template-columns:repeat(${n},1fr)">${labels}${arfrs}${arabs}</div>`;
+  return `<div class="forms-all">${cells}</div>`;
 }
 
 function buildCard(card) {
@@ -148,7 +107,7 @@ function buildCard(card) {
 
   const words = document.createElement('div');
   words.className = 'card-words';
-  words.innerHTML = `<div class="word-fr">${card.fr || ''}</div>${buildWordHTML(card)}`;
+  words.innerHTML = buildWordHTML(card);
 
   div.appendChild(imgWrap);
   div.appendChild(words);
@@ -240,9 +199,12 @@ async function init() {
   try {
     const manifest = await fetch('data/manifest.json').then(r => r.json());
 
-    const categories = await Promise.all(
+    // Chaque catégorie est chargée indépendamment : une erreur n'empêche pas les autres
+    const results = await Promise.allSettled(
       manifest.map(async (entry, i) => {
-        const text  = await fetch(`data/${entry.id}.csv`).then(r => r.text());
+        const resp = await fetch(`data/${entry.id}.csv`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const text  = await resp.text();
         const cards = parseCSV(text).map(card => ({
           ...card,
           image: `images/${entry.id}/${card.fr}.png`
@@ -250,6 +212,18 @@ async function init() {
         return { ...entry, cards, color: ACCENT_COLORS[i % ACCENT_COLORS.length] };
       })
     );
+
+    const categories = results
+      .filter(r => {
+        if (r.status === 'rejected') {
+          console.warn('Catégorie ignorée :', r.reason);
+          return false;
+        }
+        return true;
+      })
+      .map(r => r.value);
+
+    if (!categories.length) throw new Error('Aucune catégorie disponible');
 
     categories.forEach(cat => {
       const tile = document.createElement('button');
