@@ -53,7 +53,6 @@ let totalCards   = 0;
 
 const ARABIC_RE = /[؀-ۿ]/;
 
-// Affiche toutes les colonnes sauf "fr" et "image", détecte l'arabe automatiquement
 function buildWordHTML(card) {
   const SKIP = new Set(['fr', 'image']);
   const vals = Object.entries(card)
@@ -62,15 +61,9 @@ function buildWordHTML(card) {
 
   if (!vals.length) return '';
 
-  if (vals.length === 1) {
-    const v = vals[0];
-    const cls = ARABIC_RE.test(v) ? 'form-arab-solo' : 'form-arfr-solo';
-    return `<div class="forms-single"><div class="${cls}">${v}</div></div>`;
-  }
-
   const cells = vals.map(v => {
     const cls = ARABIC_RE.test(v) ? 'form-arab' : 'form-arfr';
-    return `<span class="${cls}">${v}</span>`;
+    return `<div class="${cls}">${v}</div>`;
   }).join('');
 
   return `<div class="forms-all">${cells}</div>`;
