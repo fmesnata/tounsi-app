@@ -1,4 +1,5 @@
 const ACCENT_COLORS = ['#e9c46a','#f4a261','#2a9d8f','#457b9d','#9b72cf','#e76f51','#06d6a0'];
+const IMG_EXTS = ['png', 'jpg', 'webp', 'avif'];
 
 // ── CSV parser ────────────────────────────────────────────────────────────────
 
@@ -83,15 +84,19 @@ function buildCard(card) {
   imgWrap.className = 'card-img-wrap';
 
   const img = document.createElement('img');
-  img.src = card.image || '';
   img.alt = card.fr || '';
-  img.onerror = () => {
-    img.remove();
-    const ph = document.createElement('div');
-    ph.className = 'img-missing';
-    ph.textContent = '🖼';
-    imgWrap.prepend(ph);
-  };
+  (function tryExt(i) {
+    if (i >= IMG_EXTS.length) {
+      img.remove();
+      const ph = document.createElement('div');
+      ph.className = 'img-missing';
+      ph.textContent = '🖼';
+      imgWrap.prepend(ph);
+      return;
+    }
+    img.onerror = () => tryExt(i + 1);
+    img.src = `${card.image}.${IMG_EXTS[i]}`;
+  })(0);
   imgWrap.appendChild(img);
 
   const tapPrev = document.createElement('div');
@@ -207,7 +212,7 @@ async function init() {
         const text  = await resp.text();
         const cards = parseCSV(text).map(card => ({
           ...card,
-          image: `images/${entry.id}/${card.fr}.png`
+          image: `images/${entry.id}/${card.fr}`
         }));
         return { ...entry, cards, color: ACCENT_COLORS[i % ACCENT_COLORS.length] };
       })
